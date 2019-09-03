@@ -1,74 +1,75 @@
 package BTC;
 
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.web3j.crypto.CipherException;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.*;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECPoint;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 
 public  class KeyPairs {
     /*
     产生公钥私钥对
      */
-    public String createKey() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, CipherException, IOException {
-        //使用ECDSA算法生成四要对
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-        ECGenParameterSpec ecSpec = new ECGenParameterSpec("secp256k1");
-        keyGen.initialize(ecSpec);
-        KeyPair kp = keyGen.generateKeyPair();
-        PublicKey pub = kp.getPublic();
-        PrivateKey pvt = kp.getPrivate();
-        ECPrivateKey epvt = (ECPrivateKey) pvt;
-        String sepvt = adjustTo64(epvt.getS().toString(16)).toUpperCase();
-        System.out.println("s[" + sepvt.length() + "]: " + sepvt);
-        ECPublicKey epub = (ECPublicKey) pub;
-        ECPoint pt = epub.getW();
-        String sx = adjustTo64(pt.getAffineX().toString(16)).toUpperCase();
-        String sy = adjustTo64(pt.getAffineY().toString(16)).toUpperCase();
-        String bcPub = "04" + sx + sy;
-        System.out.println("bcPub: " + bcPub);
-        //转BigInteger类型
-        BigInteger privKey = new BigInteger(sepvt, 16);
+    public byte[] createKey() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, CipherException, IOException {
+
+        byte[] J=new BigInteger("03",16).toByteArray();
+        byte[] O=new BigInteger("02",16).toByteArray();
+        BigInteger privKey = Keys.createEcKeyPair().getPrivateKey();
+
         BigInteger pubKey = Sign.publicKeyFromPrivate(privKey);
+        ECKeyPair keyPair = new ECKeyPair(privKey, pubKey);
+
+        System.out.println("privkey="+privKey.toString(16));
+        System.out.println("pubkey="+pubKey.toString(16));
         String privkey16 = privKey.toString(16);
-        System.out.println("Private key: " + privKey.toString(16));
-        System.out.println("Public key: " + pubKey.toString(16));
-        byte[] privkeybyte = new BigInteger(privkey16, 16).toByteArray();
-        System.out.println(Utils.bytesToHexString(privkeybyte));
-        byte[] extendprivkey = new byte[65];
-        byte[] netid = new byte[1];
-        byte[] networkID = new BigInteger("80", 16).toByteArray();
-        System.arraycopy(networkID, 1, netid, 0, 1);
-        if (privkeybyte.length != 32) {
-            byte[] privkeybytereal = new byte[32];
-            System.arraycopy(privkeybyte, 1, privkeybytereal, 0, 32);
-            System.out.println(Utils.bytesToHexString(privkeybytereal));
-            extendprivkey = Utils.add(netid, privkeybytereal);
+        String pubkey16=pubKey.toString(16);
+
+
+        byte[] pubkeybyteX = new byte[32];
+        byte[] privkeybyte = new BigInteger(privkey16,16).toByteArray();
+        byte[] pubkeybyte =new BigInteger(pubkey16,16).toByteArray();
+        String s  =pubKey.toString(2);
+        if (pubkeybyte.length != 64) {
+
+            System.arraycopy(pubkeybyte, 1, pubkeybyteX, 0, 32);
+            System.out.println("pub::"+Utils.bytesToHexString(pubkeybyteX));
+            byte[] pubkeybyteY=new byte[32];
+            System.arraycopy(pubkeybyte,33,pubkeybyteY,0,32);
+            System.out.println("YYY="+Utils.bytesToHexString(pubkeybyteY));
+            System.out.println(s.substring(s.length()-1,s.length()));
+            if (s.substring(s.length()-1,s.length()).equals("1")){
+                pubkeybyteX=Utils.add(J,pubkeybyteX);
+                System.out.println(Utils.bytesToHexString(pubkeybyteX));
+            }else {
+                pubkeybyteX=Utils.add(O,pubkeybyteX);
+            }
+//            extendprivkey = Utils.add(netid, privkeybytereal);
         } else {
-            System.out.println("privkeybyte=" + Utils.bytesToHexString(privkeybyte));
-            extendprivkey = Utils.add(netid, privkeybyte);
+            System.arraycopy(pubkeybyte, 0, pubkeybyteX, 0, 32);
+            System.out.println("pubkeybyte=" + Utils.bytesToHexString(pubkeybyteX));
+            byte[] pubkeybyteY=new byte[32];
+            System.arraycopy(pubkeybyte,32,pubkeybyteY,0,32);
+            System.out.println("YYY="+Utils.bytesToHexString(pubkeybyteY));
+            if (s.substring(s.length()-1,s.length()).equals("1")){
+                pubkeybyteX=Utils.add(J,pubkeybyteX);
+                System.out.println(Utils.bytesToHexString(pubkeybyteX));
+            }else {
+                pubkeybyteX=Utils.add(O,pubkeybyteX);
+            }
         }
-        //转WIF钱包导入格式私钥
-        System.out.println("networkID=" + Utils.bytesToHexString(netid));
-        System.out.println("extendprivkey=" + Utils.bytesToHexString(extendprivkey));
-        byte[] hash = DigestUtils.sha256(DigestUtils.sha256(extendprivkey));
-        System.out.println("hash=" + Utils.bytesToHexString(hash));
-        byte[] checksum = new byte[4];
-        System.arraycopy(hash, 0, checksum, 0, 4);
-        System.out.println("checksum=" + Utils.bytesToHexString(checksum));
-        byte[] binaryprivkey = Utils.add(extendprivkey, checksum);
-        System.out.println("binaryprivkey=" + Utils.bytesToHexString(binaryprivkey));
-        String WIFprivkey = Base58.encode(binaryprivkey);
-        System.out.println(WIFprivkey);
-        return String.valueOf(pubKey);
+                String pubkeyX=pubkeybyteX.toString();
+//调用生成WIF格式私钥：这个地方出错，生成地WIF格式与导入之后生成的不同
+//        WIFPrivateKey wifPrivateKey=new WIFPrivateKey();
+//        wifPrivateKey.WIFPrivKey(privkey16);
+//
+        return pubkeybyteX;
     }
 
 

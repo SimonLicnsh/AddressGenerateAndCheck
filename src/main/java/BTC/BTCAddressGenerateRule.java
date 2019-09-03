@@ -19,9 +19,9 @@ public class BTCAddressGenerateRule {
 * 5.添加校验码
 * 6.添加校验码后Base58编码得到地址
 */
-    public static String getAddress(String pubkey){
+    public static String getAddress(byte[] publicKey){
 
-        byte[] publicKey = new BigInteger(pubkey, 16).toByteArray();
+//        byte[] publicKey = new BigInteger(pubkey, 16).toByteArray();
         byte[] sha256Bytes = DigestUtils.sha256(publicKey);
         System.out.println("sha256加密=" + Utils.bytesToHexString(sha256Bytes));
         RIPEMD160Digest digest = new RIPEMD160Digest();
