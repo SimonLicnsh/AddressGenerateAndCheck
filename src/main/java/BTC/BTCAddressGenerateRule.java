@@ -19,37 +19,22 @@ public class BTCAddressGenerateRule {
 * 5.添加校验码
 * 6.添加校验码后Base58编码得到地址
 */
-    public static String getAddress(byte[] publicKey){
-
-//        byte[] publicKey = new BigInteger(pubkey, 16).toByteArray();
-        byte[] sha256Bytes = DigestUtils.sha256(publicKey);
-        System.out.println("sha256加密=" + Utils.bytesToHexString(sha256Bytes));
+    public static String getAddress(String publicKey){
+        System.out.println(publicKey);
+        byte[] pubckey = new BigInteger(publicKey, 16).toByteArray();
+        System.out.println(pubckey);
+        byte[] sha256Bytes = DigestUtils.sha256(pubckey);
         RIPEMD160Digest digest = new RIPEMD160Digest();
         digest.update(sha256Bytes, 0, sha256Bytes.length);
         byte[] ripemd160Bytes = new byte[digest.getDigestSize()];
         digest.doFinal(ripemd160Bytes, 0);
-
-        System.out.println("ripemd160加密=" + Utils.bytesToHexString(ripemd160Bytes));
-
         byte[] networkID = new BigInteger("00", 16).toByteArray();
         byte[] extendedRipemd160Bytes = Utils.add(networkID, ripemd160Bytes);
-
-        System.out.println("添加NetworkID=" + Utils.bytesToHexString(extendedRipemd160Bytes));
-
         byte[] twiceSha256Bytes = DigestUtils.sha256(DigestUtils.sha256(extendedRipemd160Bytes));
-
-        System.out.println("两次sha256加密=" + Utils.bytesToHexString(twiceSha256Bytes));
-
         byte[] checksum = new byte[4];
-
         System.arraycopy(twiceSha256Bytes, 0, checksum, 0, 4);
         System.out.println(Utils.bytesToHexString(checksum));
-        System.out.println("checksum=" + Utils.bytesToHexString(checksum));
-
         byte[] binaryBitcoinAddressBytes = Utils.add(extendedRipemd160Bytes, checksum);
-
-        System.out.println("添加checksum之后=" + Utils.bytesToHexString(binaryBitcoinAddressBytes));
-
         String bitcoinAddress = Base58.encode(binaryBitcoinAddressBytes);
         System.out.println("bitcoinAddress=" + bitcoinAddress);
         return bitcoinAddress;

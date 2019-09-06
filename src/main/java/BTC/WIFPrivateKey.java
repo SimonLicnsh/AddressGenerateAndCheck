@@ -8,10 +8,10 @@ public class WIFPrivateKey {
     public void WIFPrivKey(String privkey){
 
         byte[] privkeybyte = new BigInteger(privkey,16).toByteArray();
-        System.out.println("pribkeybyte::"+Utils.bytesToHexString(privkeybyte));
+        System.out.println("WIF中的pribkeybyte::"+Utils.bytesToHexString(privkeybyte));
         byte[] extendprivkey = new byte[65];
         byte[] netid = new byte[1];
-        byte[] networkID = new BigInteger("80", 16).toByteArray();
+         byte[] networkID = new BigInteger("80", 16).toByteArray();
         System.arraycopy(networkID, 1, netid, 0, 1);
         if (privkeybyte.length != 32) {
             byte[] privkeybytereal = new byte[32];
@@ -22,8 +22,6 @@ public class WIFPrivateKey {
             System.out.println("privkeybyte=" + Utils.bytesToHexString(privkeybyte));
             extendprivkey = Utils.add(netid, privkeybyte);
         }
-        //转WIF钱包导入格式私钥
-//        System.out.println("networkID=" + Utils.bytesToHexString(netid));
         System.out.println("extendprivkey=" + Utils.bytesToHexString(extendprivkey));
         byte[] hash = DigestUtils.sha256(DigestUtils.sha256(extendprivkey));
         System.out.println("hash=" + Utils.bytesToHexString(hash));

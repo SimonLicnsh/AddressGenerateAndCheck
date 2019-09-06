@@ -2,74 +2,41 @@ package BTC;
 
 
 import org.web3j.crypto.CipherException;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Sign;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.security.*;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECPoint;
 
 
 public  class KeyPairs {
     /*
     产生公钥私钥对
      */
-    public byte[] createKey() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, CipherException, IOException {
+    public String createKey() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, CipherException, IOException {
 
-        byte[] J=new BigInteger("03",16).toByteArray();
-        byte[] O=new BigInteger("02",16).toByteArray();
-        BigInteger privKey = Keys.createEcKeyPair().getPrivateKey();
-
-        BigInteger pubKey = Sign.publicKeyFromPrivate(privKey);
-        ECKeyPair keyPair = new ECKeyPair(privKey, pubKey);
-
-        System.out.println("privkey="+privKey.toString(16));
-        System.out.println("pubkey="+pubKey.toString(16));
-        String privkey16 = privKey.toString(16);
-        String pubkey16=pubKey.toString(16);
-
-
-        byte[] pubkeybyteX = new byte[32];
-        byte[] privkeybyte = new BigInteger(privkey16,16).toByteArray();
-        byte[] pubkeybyte =new BigInteger(pubkey16,16).toByteArray();
-        String s  =pubKey.toString(2);
-        if (pubkeybyte.length != 64) {
-
-            System.arraycopy(pubkeybyte, 1, pubkeybyteX, 0, 32);
-            System.out.println("pub::"+Utils.bytesToHexString(pubkeybyteX));
-            byte[] pubkeybyteY=new byte[32];
-            System.arraycopy(pubkeybyte,33,pubkeybyteY,0,32);
-            System.out.println("YYY="+Utils.bytesToHexString(pubkeybyteY));
-            System.out.println(s.substring(s.length()-1,s.length()));
-            if (s.substring(s.length()-1,s.length()).equals("1")){
-                pubkeybyteX=Utils.add(J,pubkeybyteX);
-                System.out.println(Utils.bytesToHexString(pubkeybyteX));
-            }else {
-                pubkeybyteX=Utils.add(O,pubkeybyteX);
-            }
-//            extendprivkey = Utils.add(netid, privkeybytereal);
-        } else {
-            System.arraycopy(pubkeybyte, 0, pubkeybyteX, 0, 32);
-            System.out.println("pubkeybyte=" + Utils.bytesToHexString(pubkeybyteX));
-            byte[] pubkeybyteY=new byte[32];
-            System.arraycopy(pubkeybyte,32,pubkeybyteY,0,32);
-            System.out.println("YYY="+Utils.bytesToHexString(pubkeybyteY));
-            if (s.substring(s.length()-1,s.length()).equals("1")){
-                pubkeybyteX=Utils.add(J,pubkeybyteX);
-                System.out.println(Utils.bytesToHexString(pubkeybyteX));
-            }else {
-                pubkeybyteX=Utils.add(O,pubkeybyteX);
-            }
-        }
-                String pubkeyX=pubkeybyteX.toString();
-//调用生成WIF格式私钥：这个地方出错，生成地WIF格式与导入之后生成的不同
-//        WIFPrivateKey wifPrivateKey=new WIFPrivateKey();
-//        wifPrivateKey.WIFPrivKey(privkey16);
-//
-        return pubkeybyteX;
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+        ECGenParameterSpec ecSpec = new ECGenParameterSpec("secp256k1");
+        keyGen.initialize(ecSpec);
+        KeyPair kp = keyGen.generateKeyPair();
+        PublicKey pub = kp.getPublic();
+        PrivateKey pvt = kp.getPrivate();
+        ECPrivateKey epvt = (ECPrivateKey) pvt;
+        String sepvt = adjustTo64(epvt.getS().toString(16)).toUpperCase();
+        System.out.println("s[" + sepvt.length() + "]: " + sepvt);
+        ECPublicKey epub = (ECPublicKey)pub;
+        ECPoint pt = epub.getW();
+        String sx = adjustTo64(pt.getAffineX().toString(16)).toUpperCase();
+        String sy = adjustTo64(pt.getAffineY().toString(16)).toUpperCase();
+        String bcPub = "04" + sx + sy;
+        String bcpubkey=sx+sy;
+        System.out.println("bcPub: " + bcPub);
+        WIFPrivateKey wifPrivateKey=new WIFPrivateKey();
+        System.out.println("keypairs中的privkey16="+sepvt);
+        wifPrivateKey.WIFPrivKey(sepvt);
+        return bcPub;
     }
 
 
